@@ -1,27 +1,36 @@
 import bcrypt from "bcryptjs"
 import { getDB } from "../db/mongo"
-import { userCollection } from "../utils"
+import { trainerCollection } from "../utils"
 import { ObjectId } from "mongodb"
-import { User } from "../types-"
+import { Trainer } from "../types-"
 
 
 
-export const createUser=async(email:string,password:string)=>{
-    const db=getDB()
-    const passwordEncryptada=await bcrypt.hash(password,10)
-    const user=await db.collection(userCollection).insertOne(
+export const createUser = async (name: string, password: string) => {
+    const db = getDB()
+    const exists = await db
+        .collection(trainerCollection)
+        .findOne({ name });
+
+    if (exists) {
+        throw new Error("El nombre ya está en uso");
+    }
+    const passwordEncryptada = await bcrypt.hash(password, 10)
+    const user = await db.collection(trainerCollection).insertOne(
         {
-            email,
-            password:passwordEncryptada
+            name,
+            password: passwordEncryptada,
+            pokemons: []
+
         }
     )
 
     return user.insertedId.toString()
 }
 
-export const validateUser = async (email: string, password: string) => {
+export const validateUser = async (name: string, password: string) => {
     const db = getDB()
-    const user = await db.collection(userCollection).findOne({ email })
+    const user = await db.collection(trainerCollection).findOne({ name })
     if (!user) {
         return null
     }
@@ -34,7 +43,7 @@ export const validateUser = async (email: string, password: string) => {
 
 export const findUserbyId = async (id: string) => {
     const db = getDB()
-    return db.collection<User>(userCollection).findOne({
+    return db.collection<Trainer>(trainerCollection).findOne({
         _id: new ObjectId(id)
     })
 }
